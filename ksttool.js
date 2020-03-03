@@ -1,60 +1,8 @@
-/*
-----------------------------------------------------------
-홀몸의 케이스
-	서클
-		로테이션 해도 된다
-		setScale 사용해서 크기 조정해도 된다 (타원형이 되선 안된다)
-
-	렉탱글
-		로테이션 해도 된다
-		setScale 사용해서 크기 조정해도 된다 (가로세로 비율이 달라도 OK)
-
-	폴리곤
-		로테이션 해도 된다
-		setScale 사용해서 크기 조정해도 된다 (가로세로 비율이 달라도 OK)
-
-부모자식 관계의 케이스
-	렉탱글 or 폴리곤이 부모일때
-		부모가 회전할때 자식의 충돌체로써의 정상작동여부 (할아버지, 고조할아버지가 있어도 그들의 정보가 모두 반영됨)
-		- 서클 자식: ok
-		- 폴리곤 자식: ok
-		- 렉탱글 자식: ok
-
-		부모의 스케일이 변할때 자식의 충돌체로써의 정상작동여부
-		- 서클 자식: 테스트 필요
-		- 폴리곤 자식: 테스트 필요
-		- 렉탱글 자식: 테스트 필요
-
-
-	서클이 부모일때
-		부모가 회전할때 자식의 충돌체로써의 정상작동여부 (할아버지, 고조할아버지가 있어도 그들의 정보가 모두 반영됨)
-		- 서클 자식: ok
-		- 폴리곤 자식: ok
-		- 렉탱글 자식: ok
-
-		부모의 스케일이 변할때 자식의 충돌체로써의 정상작동여부
-		- 서클 자식: 테스트 필요
-		- 폴리곤 자식: 테스트 필요
-		- 렉탱글 자식: 테스트 필요
-		(추가적으로 특히 서클의 경우는 스케일이 x,y가 동일하지 않고 타원형이 될때엔 부모 자체의 충돌체도 온전치 못함. 서클의 충돌체가 온전하려면 타원형이 되서는 안됨)
-
-cc.Node 클래스에 덧대서 사용하고 있는 확장 프로토타입 목록
-	last_moved_angle: 노드의 진행방향을 담는다
-	move_speed: 노드의 이동속도
-	stick_ticket: 이 속성이 존재하지 않으면 ksttool.set_seperate_stick_two_circle() 메소드로 두번째 모드로 작동시킬때 작동되지 않게된다.
-	before_coordinate_x: 바로 이전 좌표
-	before_coordinate_y: 바로 이전 좌표
-	collider_type: 충돌체 타입
-	collide_polygon: 폴리곤 패스
-	option_level: 충돌체 검출 방식
-
-----------------------------------------------------------
-*/
-var ksttool = {};
+let ksttool = {};
 
 ksttool.math = {};
 ksttool.math.HALF_PI = Math.PI / 2;
-ksttool.math.EPSILON = 0.0000001; // Number.EPSILON; // 0.0000001;
+ksttool.math.EPSILON = 0.0000001;
 ksttool.math.INFINITY = 9590000;
 ksttool.math.TINYNANO = 0.00000000000052;
 ksttool.CIRCLE_COLLIDER = 0;
@@ -65,18 +13,6 @@ ksttool.TAG_GUIDE_LINE = 10001;
 ksttool.ACTIVE_INSIDE_COLLISION = true;
 ksttool.OPTION_LEVEL_FULL = 0;
 ksttool.OPTION_LEVEL_LIGHT = 1;
-
-ksttool.ALIGN_VERTICAL_TOP = 0;
-ksttool.ALIGN_VERTICAL_MIDDLE = 1;
-ksttool.ALIGN_VERTICAL_BOTTOM = 2;
-ksttool.ALIGN_VERTICAL_MATCHTOP = 6;
-ksttool.ALIGN_VERTICAL_MATCHBOTTOM = 7;
-ksttool.ALIGN_HORIZONTAL_LEFT = 3;
-ksttool.ALIGN_HORIZONTAL_CENTER = 4;
-ksttool.ALIGN_HORIZONTAL_RIGHT = 5;
-ksttool.ALIGN_HORIZONTAL_MATCHLEFT = 8;
-ksttool.ALIGN_HORIZONTAL_MATCHRIGHT = 9;
-
 ksttool.VECTOR_CHAIN_TYPE_NONE = 0;
 ksttool.VECTOR_CHAIN_TYPE_PLP = 1;
 ksttool.VECTOR_CHAIN_TYPE_XYX = 2;
@@ -696,109 +632,6 @@ ksttool.getAdvPosition = function (node) {
     position.w = node_size.w;
     position.h = node_size.h;
     return position;
-};
-
-ksttool.setPositionAdvTo = function (node, pos, match_node) {
-    //ofc.yes (블락니드지니어스에서)
-    /*
-       좌상단기준좌표계로 인자를 받아서 노드 위치 반영
-    */
-    if (typeof pos == 'object') {
-        if (pos.hasOwnProperty('x') && pos.hasOwnProperty('y')) {
-            var size_as_rect = ksttool.getNodeSize(node).as_rectangle;
-            node.setPosition(pos.x + (size_as_rect.w / 2), (node.getParent().height - pos.y) + -(size_as_rect.h / 2));
-        }
-        else if (pos.hasOwnProperty('v') || pos.hasOwnProperty('h')) {
-            var size_as_rect = ksttool.getAdvPosition(node);
-            // console.log(ksttool.getAdvPosition(node));
-            var posss = null;
-            if (match_node != undefined && match_node != null) {
-                posss = ksttool.getAdvPosition(match_node);
-            }
-            var x = 0;
-            var y = 0;
-            if (pos.hasOwnProperty('v')) {
-                if (pos.v == ksttool.ALIGN_VERTICAL_MATCHTOP) {
-                    y = posss.y;
-                }
-                if (pos.v == ksttool.ALIGN_VERTICAL_MATCHBOTTOM) {
-                    y = posss.y - (size_as_rect.h - posss.h);
-                }
-                if (pos.v == ksttool.ALIGN_VERTICAL_TOP) {
-                    if (posss == null) {
-                        y = 0;
-                    } else {
-                        y = posss.y - size_as_rect.h;
-                    }
-                }
-                if (pos.v == ksttool.ALIGN_VERTICAL_MIDDLE) {
-                    if (posss == null) {
-                        y = ((node.getParent().height - size_as_rect.h) / 2);
-                    } else {
-                        y = posss.y - ((size_as_rect.h - posss.h) / 2);
-                    }
-                }
-                if (pos.v == ksttool.ALIGN_VERTICAL_BOTTOM) {
-                    if (posss == null) {
-                        y = ((node.getParent().height - size_as_rect.h));
-                    } else {
-                        y = posss.y + posss.h;
-                    }
-                }
-            }
-            if (pos.hasOwnProperty('h')) {
-                if (pos.h == ksttool.ALIGN_HORIZONTAL_MATCHLEFT) {
-                    x = posss.x;
-                }
-                if (pos.h == ksttool.ALIGN_HORIZONTAL_MATCHRIGHT) {
-                    x = posss.x - (size_as_rect.w - posss.w);
-                }
-                if (pos.h == ksttool.ALIGN_HORIZONTAL_LEFT) {
-                    if (posss == null) {
-                        x = 0;
-                    } else {
-                        x = posss.x - size_as_rect.w;
-                    }
-                }
-                if (pos.h == ksttool.ALIGN_HORIZONTAL_CENTER) {
-                    if (posss == null) {
-                        x = ((node.getParent().width - size_as_rect.w) / 2);
-                    } else {
-                        x = posss.x - ((size_as_rect.w - posss.w) / 2);
-                    }
-                }
-                if (pos.h == ksttool.ALIGN_HORIZONTAL_RIGHT) {
-                    if (posss == null) {
-                        x = ((node.getParent().width - size_as_rect.w));
-                    } else {
-                        x = posss.x + posss.w;
-                    }
-                }
-            }
-            if (pos.hasOwnProperty('vmargin')) {
-                y += pos.vmargin;
-            }
-            if (pos.hasOwnProperty('hmargin')) {
-                x += pos.hmargin;
-            }
-            ksttool.setPositionAdvTo(node, { x: x, y: y }, match_node);
-        }
-    }
-    // if(typeof pos == 'number') {
-
-
-    // 	// ksttool.ALIGN_VERTICAL_TOP = 0;
-    // 	// ksttool.ALIGN_VERTICAL_MIDDLE = 1;
-    // 	// ksttool.ALIGN_VERTICAL_BOTTOM = 2;
-    // 	// ksttool.ALIGN_HORIZONTAL_LEFT = 3;
-    // 	// ksttool.ALIGN_HORIZONTAL_CENTER = 4;
-    // 	// ksttool.ALIGN_HORIZONTAL_RIGHT = 5;
-
-
-
-
-
-    // }
 };
 
 ksttool.setPositionBy = function (node, pos) {
