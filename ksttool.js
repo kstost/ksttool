@@ -3602,52 +3602,73 @@ ksttool.math.make_vectors_two_point = function (center_point, ra, line_length, r
 
 
 ksttool.get_closest_coordinate_by = function (dot_coordinate, poly) {
-    // poly 에 도형을 이루는 폴리곤 좌표들을 배열로주자, dot_coordinate 는 폴리곤과 가장 근접한 위치를 판별할 기준점
-    // let SSS = pmc ? new Date() : null;
-    let min_coord;
-    let length_min;
-    let length_max;
-    // length_max = ksttool.math.INFINITY;// 1000 * 1000;
-    poly.forEach((dot, idx) => {
-        //--------------
-        let a = dot.x - dot_coordinate.x;
-        let b = dot.y - dot_coordinate.y;
-        let len = Math.sqrt(a * a + b * b);
-        //--------------
-        if (length_min === undefined || length_min > len) {
+   // poly 에 도형을 이루는 폴리곤 좌표들을 배열로주자, dot_coordinate 는 폴리곤과 가장 근접한 위치를 판별할 기준점
+   // poly 에 좌표정보를 두개만주면 그건 그냥 선이다 선으로줘도 된다!
+   // 심지어 원으로 줘도된다 원은 {x,y,r} 이렇게 주자
+   // let SSS = pmc ? new Date() : null;
+   if (poly instanceof Array) {
+      let min_coord;
+      let length_min;
+      let length_max;
+      // length_max = ksttool.math.INFINITY;// 1000 * 1000;
+      poly.forEach((dot, idx) => {
+         //--------------
+         let a = dot.x - dot_coordinate.x;
+         let b = dot.y - dot_coordinate.y;
+         let len = Math.sqrt(a * a + b * b);
+         //--------------
+         if (length_min === undefined || length_min > len) {
             length_min = len;
             min_coord = dot;
-        }
-        if (length_max === undefined || length_max < len) {
+         }
+         if (length_max === undefined || length_max < len) {
             length_max = len;
-        }
-    });
-    let vectors = [];
-    poly.forEach((dot, idx) => {
-        let vector = {
+         }
+      });
+      let vectors = [];
+      poly.forEach((dot, idx) => {
+         let vector = {
             first: dot,
             second: poly[idx + 1] ? poly[idx + 1] : poly[0],
-        };
-        let ra = Math.atan2(vector.first.y - vector.second.y, vector.first.x - vector.second.x) + (Math.PI / 2);
+         };
+         let ra = Math.atan2(vector.first.y - vector.second.y, vector.first.x - vector.second.x) + (Math.PI / 2);
 
-        vectors.push(ksttool.math.make_vectors_two_point(dot_coordinate, ra, length_max * 10, 0.5));
-    });
-    let interlist = [min_coord];
-    for (let i = 0; i < vectors.length; i++) {
-        for (let p = 0; p < poly.length; p++) {
+         vectors.push(ksttool.math.make_vectors_two_point(dot_coordinate, ra, length_max * 10, 0.5));
+      });
+      let interlist = [min_coord];
+      for (let i = 0; i < vectors.length; i++) {
+         for (let p = 0; p < poly.length; p++) {
             let inter = ksttool.check_intersection_line_line(vectors[i], {
-                first: poly[p],
-                second: poly[p + 1] ? poly[p + 1] : poly[0],
+               first: poly[p],
+               second: poly[p + 1] ? poly[p + 1] : poly[0],
             }, true);
             if (inter) {
-                interlist.push(inter);
+               interlist.push(inter);
             }
-        }
-    }
-    let df = ksttool.math.get_closest_point_by_sorting(interlist.map(point => { return { coordinate: point } }), dot_coordinate);
-    // ksttool.math.performance_check('get_closest_coordinate_by', SSS)
-    return df;
+         }
+      }
+      let df = ksttool.math.get_closest_point_by_sorting(interlist.map(point => { return { coordinate: point } }), dot_coordinate);
+      // ksttool.math.performance_check('get_closest_coordinate_by', SSS)
+      return df;
+   } else {
+      if (false) {
+         // poly가 라인일때
+         return ksttool.get_closest_coordinate_by(dot_coordinate, [poly]);// = function (dot_coordinate, poly) {
+      } else {
+         if (poly.r !== undefined) {
+            // poly가 원일때
+            let intersection = ksttool.check_intersection_line_circle({ first: dot_coordinate, second: poly }, poly);
+            if (intersection.length) {
+               return intersection[0];
+            }
+         } else {
+            // poly가 점일때
+            return poly;
+         }
+      }
+   }
 }
+
 
 ksttool.math.get_closest_point_by_sorting = function (list_need, circle_cdls) {
     /*
