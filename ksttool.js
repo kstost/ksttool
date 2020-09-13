@@ -3741,3 +3741,10 @@ ksttool.math.is_circle_poly_intersect = function (circle, poly) {
     // ksttool.math.performance_check('is_circle_poly_intersect', SSS)
     return inin;
 };
+ksttool.math.make_circle = function (center, radius, radian) {
+    let angle = radian * (Math.PI / 180);
+    return {
+        x: center.x + Math.cos(angle) * radius,
+        y: center.y + Math.sin(angle) * radius
+    };
+};
